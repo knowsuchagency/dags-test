@@ -68,8 +68,53 @@ class BaseStack(TerraformStack):
         return CONFIG[self.environment]
 
 
+class AirflowBucket(BaseStack):
+    def __init__(
+        self,
+        scope: Construct,
+        ns: str,
+        environment: Environment,
+        bucket_postfix: str,
+    ):
+
+        super().__init__(scope, ns, environment)
+
+        self.bucket_name = f"allied-world-dags-{self.environment}-{bucket_postfix}"
+
+        self.bucket = self.get_s3_bucket()
+
+    def get_s3_bucket(self):
+        bucket = S3Bucket(
+            self,
+            "airflow-bucket",
+            bucket=self.bucket_name,
+            tags={
+                "Name": self.bucket_name,
+                "cdktf": "true",
+            },
+        )
+
+        S3BucketPublicAccessBlock(
+            self,
+            "block-public-access",
+            bucket=bucket.bucket,
+            block_public_acls=True,
+            block_public_policy=True,
+            ignore_public_acls=True,
+            restrict_public_buckets=True,
+        )
+
+        return bucket
+
+
 class AirflowDags(BaseStack):
-    def __init__(self, scope: Construct, ns: str, environment: Environment):
+    def __init__(
+        self,
+        scope: Construct,
+        ns: str,
+        environment: Environment,
+        bucket: S3Bucket,
+    ):
 
         super().__init__(scope, ns, environment)
 
@@ -79,7 +124,7 @@ class AirflowDags(BaseStack):
             self,
             "dags-deployment",
             for_each=TerraformIterator.from_list(Fn.fileset(f"{dags_path}/", "*.py")),
-            bucket=self.bucket.bucket,
+            bucket=bucket.bucket,
             key="dags/${each.value}",
             source=f"{dags_path}/${{each.value}}",
             etag=f'filemd5("{dags_path}/${{each.value}}")',
@@ -93,6 +138,7 @@ class AirflowEnvironment(BaseStack):
         ns: str,
         environment: Environment,
         mwaa_environment_name: str,
+        bucket: S3Bucket,
         airflow_version: AirflowVersion = "2.2.2",
         environment_class: EnvironmentClass = "mw1.small",
         webserver_access_mode: WebserverAccessMode = "PUBLIC_ONLY",
@@ -116,7 +162,7 @@ class AirflowEnvironment(BaseStack):
             f"allied-world-dags-{self.environment}-{self.mwaa_environment_name.lower()}"
         )
 
-        self.bucket = self.get_s3_bucket()
+        self.bucket = bucket
 
         self.execution_role = self.get_execution_role()
 
@@ -224,29 +270,6 @@ class AirflowEnvironment(BaseStack):
             schedulers=self.schedulers,
             logging_configuration=logging_configuration,
         )
-
-    def get_s3_bucket(self):
-        bucket = S3Bucket(
-            self,
-            "airflow-bucket",
-            bucket=self.bucket_name,
-            tags={
-                "Name": self.bucket_name,
-                "cdktf": "true",
-            },
-        )
-
-        S3BucketPublicAccessBlock(
-            self,
-            "block-public-access",
-            bucket=bucket.bucket,
-            block_public_acls=True,
-            block_public_policy=True,
-            ignore_public_acls=True,
-            restrict_public_buckets=True,
-        )
-
-        return bucket
 
     def get_execution_role(self):
         """Return execution role for MWAA."""
@@ -379,14 +402,32 @@ class AirflowEnvironment(BaseStack):
 
 app = App()
 
-AirflowDags(app, "airflow-dev-dags", environment="dev")
 
-AirflowEnvironment(
-    app,
-    "airflow-dev-environment",
-    environment="dev",
-    mwaa_environment_name="data-engineering",
-)
+def generate_deployment(environment: Environment, mwaa_environment_name: str):
 
+    bucket_stack = AirflowBucket(
+        app,
+        f"airflow-{environment}-bucket",
+        environment=environment,
+        bucket_postfix=mwaa_environment_name,
+    )
+
+    AirflowDags(
+        app,
+        f"airflow-{environment}-dags",
+        environment=environment,
+        bucket=bucket_stack.bucket,
+    )
+
+    AirflowEnvironment(
+        app,
+        f"airflow-{environment}-environment",
+        environment=environment,
+        mwaa_environment_name=mwaa_environment_name,
+        bucket=bucket_stack.bucket,
+    )
+
+
+generate_deployment("dev", "data-engineering")
 
 app.synth()
