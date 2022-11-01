@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import json
+import os
 from pathlib import Path
 
+import toml
+from box import Box
 from cdktf import App, TerraformStack, Fn, TerraformIterator, LocalBackend
 from cdktf_cdktf_provider_aws.iam_role import IamRole, IamRoleInlinePolicy
 from cdktf_cdktf_provider_aws.mwaa_environment import (
@@ -22,8 +25,10 @@ from cdktf_cdktf_provider_aws.security_group import (
 )
 from constructs import Construct
 
-from config import CONFIG, AWS_REGION
-from local_types import *
+from literals import *
+
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+CONFIG = Box(toml.loads(Path("config.toml").read_text()))
 
 
 class BaseStack(TerraformStack):
@@ -69,6 +74,8 @@ class BaseStack(TerraformStack):
 
 
 class AirflowDags(BaseStack):
+    """This stack deploys DAG code to s3."""
+
     def __init__(
         self,
         scope: Construct,
@@ -93,6 +100,8 @@ class AirflowDags(BaseStack):
 
 
 class AirflowEnvironment(BaseStack):
+    """This stack deploys the MWAA Environment and the bucket it relies on."""
+
     def __init__(
         self,
         scope: Construct,
@@ -157,7 +166,7 @@ class AirflowEnvironment(BaseStack):
             self,
             "security-group",
             name=f"mwaa-{self.mwaa_environment_name}-sg",
-            vpc_id=self.config.mwaa.vpc,
+            vpc_id=self.config.vpc,
             ingress=[
                 SecurityGroupIngress(
                     description="allow all inbound traffic within self",
@@ -226,7 +235,7 @@ class AirflowEnvironment(BaseStack):
             name=self.mwaa_environment_name,
             network_configuration=MwaaEnvironmentNetworkConfiguration(
                 security_group_ids=[self.security_group.id],
-                subnet_ids=self.config.mwaa.subnet_ids,
+                subnet_ids=self.config.subnets,
             ),
             source_bucket_arn=self.bucket.arn,
             airflow_configuration_options={
@@ -385,9 +394,9 @@ class AirflowEnvironment(BaseStack):
 app = App()
 
 
-def generate_deployment(environment: Environment, mwaa_environment_name: str):
+for environment in CONFIG:
 
-    bucket = f"allied-world-dags-{environment}-{mwaa_environment_name}"
+    bucket = f"allied-world-dags-{environment}"
 
     AirflowDags(
         app,
@@ -396,15 +405,15 @@ def generate_deployment(environment: Environment, mwaa_environment_name: str):
         bucket=bucket,
     )
 
-    AirflowEnvironment(
-        app,
-        f"airflow-{environment}-environment",
-        environment=environment,
-        mwaa_environment_name=mwaa_environment_name,
-        bucket=bucket,
-    )
+    for airflow_environment in CONFIG[environment].airflow_environments:
 
+        AirflowEnvironment(
+            app,
+            f"airflow-{environment}-{airflow_environment}-environment",
+            environment=environment,
+            mwaa_environment_name=airflow_environment,
+            bucket=bucket,
+        )
 
-generate_deployment("dev", "data-engineering")
 
 app.synth()

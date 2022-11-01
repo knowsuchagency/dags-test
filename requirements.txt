@@ -4,3 +4,4 @@ cdktf-cdktf-provider-docker
 cdktf-cdktf-provider-aws
 python-box
 boto3
+toml
