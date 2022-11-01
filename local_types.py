@@ -4,8 +4,6 @@ Environment = Literal[
     "dev",
     "stage",
     "prod",
-    # TODO: remove once no longer necessary
-    "knowsuchagency",
 ]
 
 AirflowVersion = Literal[

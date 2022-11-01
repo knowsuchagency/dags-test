@@ -47,8 +47,6 @@ class BaseStack(TerraformStack):
                 self.aws_account = "645769240473"
             case "prod":
                 self.aws_account = "608056288583"
-            case "knowsuchagency":
-                self.aws_account = "385504394431"
             case _:
                 raise ValueError(f"unknown {environment = }")
 
@@ -70,7 +68,25 @@ class BaseStack(TerraformStack):
         return CONFIG[self.environment]
 
 
-class Airflow(BaseStack):
+class AirflowDags(BaseStack):
+    def __init__(self, scope: Construct, ns: str, environment: Environment):
+
+        super().__init__(scope, ns, environment)
+
+        dags_path = Path("dags").resolve()
+
+        S3Object(
+            self,
+            "dags-deployment",
+            for_each=TerraformIterator.from_list(Fn.fileset(f"{dags_path}/", "*.py")),
+            bucket=self.bucket.bucket,
+            key="dags/${each.value}",
+            source=f"{dags_path}/${{each.value}}",
+            etag=f'filemd5("{dags_path}/${{each.value}}")',
+        )
+
+
+class AirflowEnvironment(BaseStack):
     def __init__(
         self,
         scope: Construct,
@@ -101,8 +117,6 @@ class Airflow(BaseStack):
         )
 
         self.bucket = self.get_s3_bucket()
-
-        self.dags_folder()
 
         self.execution_role = self.get_execution_role()
 
@@ -201,7 +215,6 @@ class Airflow(BaseStack):
                 # "scheduler.min_file_process_interval": "300",
                 # "scheduler.parsing_processes": "2",
                 # "scheduler.processor_poll_interval": "60",
-
             },
             webserver_access_mode=self.webserver_access_mode,
             environment_class=self.environment_class,
@@ -234,19 +247,6 @@ class Airflow(BaseStack):
         )
 
         return bucket
-
-    def dags_folder(self):
-        """Deploy DAGs."""
-        dags_path = Path("dags").resolve()
-        S3Object(
-            self,
-            "dags-deployment",
-            for_each=TerraformIterator.from_list(Fn.fileset(f"{dags_path}/", "*.py")),
-            bucket=self.bucket.bucket,
-            key="dags/${each.value}",
-            source=f"{dags_path}/${{each.value}}",
-            etag=f'filemd5("{dags_path}/${{each.value}}")',
-        )
 
     def get_execution_role(self):
         """Return execution role for MWAA."""
@@ -379,17 +379,12 @@ class Airflow(BaseStack):
 
 app = App()
 
-Airflow(
-    app,
-    "airflow-dev",
-    environment="dev",
-    mwaa_environment_name="data-engineering",
-)
+AirflowDags(app, "airflow-dev-dags", environment="dev")
 
-Airflow(
+AirflowEnvironment(
     app,
-    "airflow-knowsuchagency",
-    environment="knowsuchagency",
+    "airflow-dev-environment",
+    environment="dev",
     mwaa_environment_name="data-engineering",
 )
 
