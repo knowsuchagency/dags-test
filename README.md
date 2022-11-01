@@ -2,6 +2,8 @@
 
 This repo contains IAC for deploying MWAA (managed airflow) to AWS as well as the dags in the [`dags/`](dags) folder.
 
+The infrastructure-as-code entrypoint is [main.py](main.py).
+
 ## Usage
 
 ```bash
