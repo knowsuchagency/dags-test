@@ -11,7 +11,10 @@ The infrastructure-as-code entrypoint is [main.py](main.py).
 python3.10 -m venv .venv
 . .venv/bin/activate
 # install requirements
-pip install -U pip ; pip install -r requirements.txt
+pip install -U pip
+pip install -r requirements.txt
+# we have to separate these, otherwise pip-installation fails (can't resolve)
+pip install -r requirements-dags.txt
 # deploy terraform
 cdktf deploy airflow-dev
 ```
