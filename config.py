@@ -9,8 +9,8 @@ CONFIG = Box(
     {
         "dev": {
             "mwaa": {
-                "subnet_ids": ["subnet-02936ce771f7216e2", "subnet-04768ae7fc3e9ae32"],
-                "vpc": "vpc-0b18a53b9d7fa154a",
+                "subnet_ids": ["subnet-05381beba1da37295", "subnet-0e88f922959e7bb28"],
+                "vpc": "vpc-0d819d4ed2f6cf33f",
             }
         },
         # NOTE: this is for initial prototyping in my own corporate account (Stephan Fitzpatrick)
