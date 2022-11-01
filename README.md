@@ -11,5 +11,5 @@ python3.10 -m venv .venv
 # install requirements
 pip install -U pip ; pip install -r requirements.txt
 # deploy terraform
-cdktf deploy
+cdktf deploy airflow-dev
 ```
