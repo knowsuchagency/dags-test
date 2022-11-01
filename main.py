@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import toml
-from cdktf import (
-    App,
-)
+from cdktf import App
 
 from stacks.airflow_environment import AirflowEnvironment
 from stacks.dags import AirflowDags
