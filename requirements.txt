@@ -1,5 +1,5 @@
 cdktf~=0.13.2
-apache-airflow==2.2.2
+# apache-airflow==2.2.2
 # TODO: add version specifiers
 cdktf-cdktf-provider-docker
 cdktf-cdktf-provider-aws
