@@ -23,7 +23,7 @@ from cdktf_cdktf_provider_aws.security_group import (
 from constructs import Construct
 
 from config import CONFIG, AWS_REGION
-from types import *
+from local_types import *
 
 
 class BaseStack(TerraformStack):
