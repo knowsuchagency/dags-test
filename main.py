@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import json
-import os
 from pathlib import Path
-from typing import *
 
 from cdktf import App, TerraformStack, Fn, TerraformIterator, LocalBackend
 from cdktf_cdktf_provider_aws.iam_role import IamRole, IamRoleInlinePolicy
@@ -24,40 +22,8 @@ from cdktf_cdktf_provider_aws.security_group import (
 )
 from constructs import Construct
 
-from config import CONFIG
-
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-
-Environment = Literal[
-    "dev",
-    "stage",
-    "prod",
-    # TODO: remove once no longer necessary
-    "knowsuchagency",
-]
-
-AirflowVersion = Literal[
-    "2.0.2",
-    "2.2.2",
-]
-
-EnvironmentClass = Literal[
-    "mw1.small",
-    "mw1.medium",
-    "mw1.large",
-]
-
-WebserverAccessMode = Literal[
-    "PRIVATE_ONLY",
-    "PUBLIC_ONLY",
-]
-
-Schedulers = Literal[
-    2,
-    3,
-    4,
-    5,
-]
+from config import CONFIG, AWS_REGION
+from types import *
 
 
 class BaseStack(TerraformStack):
