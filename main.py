@@ -68,20 +68,66 @@ class BaseStack(TerraformStack):
         return CONFIG[self.environment]
 
 
-class AirflowBucket(BaseStack):
+class AirflowDags(BaseStack):
     def __init__(
         self,
         scope: Construct,
         ns: str,
         environment: Environment,
-        bucket_postfix: str,
+        bucket: str,
     ):
 
         super().__init__(scope, ns, environment)
 
-        self.bucket_name = f"allied-world-dags-{self.environment}-{bucket_postfix}"
+        dags_path = Path("dags").resolve()
+
+        S3Object(
+            self,
+            "dags-deployment",
+            for_each=TerraformIterator.from_list(Fn.fileset(f"{dags_path}/", "*.py")),
+            bucket=bucket,
+            key="dags/${each.value}",
+            source=f"{dags_path}/${{each.value}}",
+            etag=f'filemd5("{dags_path}/${{each.value}}")',
+        )
+
+
+class AirflowEnvironment(BaseStack):
+    def __init__(
+        self,
+        scope: Construct,
+        ns: str,
+        environment: Environment,
+        mwaa_environment_name: str,
+        bucket: str,
+        airflow_version: AirflowVersion = "2.2.2",
+        environment_class: EnvironmentClass = "mw1.small",
+        webserver_access_mode: WebserverAccessMode = "PUBLIC_ONLY",
+        max_workers: int = 10,
+        min_workers: int = 1,
+        schedulers: Schedulers = 2,
+        logging_configuration: MwaaEnvironmentLoggingConfiguration = None,
+    ):
+        super().__init__(scope, ns, environment)
+
+        self.airflow_version = airflow_version
+        self.environment_class = environment_class
+        self.webserver_access_mode = webserver_access_mode
+        self.mwaa_environment_name = mwaa_environment_name
+        self.max_workers = max_workers
+        self.min_workers = min_workers
+        self.schedulers = schedulers
+        self.logging_configuration = logging_configuration
+
+        self.bucket_name = bucket
 
         self.bucket = self.get_s3_bucket()
+
+        self.execution_role = self.get_execution_role()
+
+        self.security_group = self.get_security_group()
+
+        self.mwaa_environment = self.get_mwaa_environment()
 
     def get_s3_bucket(self):
         bucket = S3Bucket(
@@ -105,70 +151,6 @@ class AirflowBucket(BaseStack):
         )
 
         return bucket
-
-
-class AirflowDags(BaseStack):
-    def __init__(
-        self,
-        scope: Construct,
-        ns: str,
-        environment: Environment,
-        bucket: S3Bucket,
-    ):
-
-        super().__init__(scope, ns, environment)
-
-        dags_path = Path("dags").resolve()
-
-        S3Object(
-            self,
-            "dags-deployment",
-            for_each=TerraformIterator.from_list(Fn.fileset(f"{dags_path}/", "*.py")),
-            bucket=bucket.bucket,
-            key="dags/${each.value}",
-            source=f"{dags_path}/${{each.value}}",
-            etag=f'filemd5("{dags_path}/${{each.value}}")',
-        )
-
-
-class AirflowEnvironment(BaseStack):
-    def __init__(
-        self,
-        scope: Construct,
-        ns: str,
-        environment: Environment,
-        mwaa_environment_name: str,
-        bucket: S3Bucket,
-        airflow_version: AirflowVersion = "2.2.2",
-        environment_class: EnvironmentClass = "mw1.small",
-        webserver_access_mode: WebserverAccessMode = "PUBLIC_ONLY",
-        max_workers: int = 10,
-        min_workers: int = 1,
-        schedulers: Schedulers = 2,
-        logging_configuration: MwaaEnvironmentLoggingConfiguration = None,
-    ):
-        super().__init__(scope, ns, environment)
-
-        self.airflow_version = airflow_version
-        self.environment_class = environment_class
-        self.webserver_access_mode = webserver_access_mode
-        self.mwaa_environment_name = mwaa_environment_name
-        self.max_workers = max_workers
-        self.min_workers = min_workers
-        self.schedulers = schedulers
-        self.logging_configuration = logging_configuration
-
-        self.bucket_name = (
-            f"allied-world-dags-{self.environment}-{self.mwaa_environment_name.lower()}"
-        )
-
-        self.bucket = bucket
-
-        self.execution_role = self.get_execution_role()
-
-        self.security_group = self.get_security_group()
-
-        self.mwaa_environment = self.get_mwaa_environment()
 
     def get_security_group(self):
         return SecurityGroup(
@@ -405,18 +387,13 @@ app = App()
 
 def generate_deployment(environment: Environment, mwaa_environment_name: str):
 
-    bucket_stack = AirflowBucket(
-        app,
-        f"airflow-{environment}-bucket",
-        environment=environment,
-        bucket_postfix=mwaa_environment_name,
-    )
+    bucket = f"allied-world-dags-{environment}-{mwaa_environment_name}"
 
     AirflowDags(
         app,
         f"airflow-{environment}-dags",
         environment=environment,
-        bucket=bucket_stack.bucket,
+        bucket=bucket,
     )
 
     AirflowEnvironment(
@@ -424,7 +401,7 @@ def generate_deployment(environment: Environment, mwaa_environment_name: str):
         f"airflow-{environment}-environment",
         environment=environment,
         mwaa_environment_name=mwaa_environment_name,
-        bucket=bucket_stack.bucket,
+        bucket=bucket,
     )
 
 
