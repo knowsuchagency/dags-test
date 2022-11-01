@@ -1,24 +1,26 @@
 #!/usr/bin/env python
-from pathlib import Path
 
 import toml
-from box import Box
 from cdktf import (
     App,
 )
 
 from stacks.airflow_environment import AirflowEnvironment
 from stacks.dags import AirflowDags
+from stacks.literals import Environment
 
-CONFIG = Box(toml.loads(Path("config.toml").read_text()))
+with open("config.toml") as fp:
+    config = toml.load(fp)
 
 
 app = App()
 
 
-for environment in CONFIG:
+for environment in config:
 
-    for airflow_environment in CONFIG[environment].airflow_environments:
+    environment: Environment
+
+    for airflow_environment in config[environment]["airflow_environments"]:
 
         bucket = f"allied-world-dags-{environment}-{airflow_environment}"
 
