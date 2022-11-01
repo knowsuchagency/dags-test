@@ -3,9 +3,18 @@ import json
 import os
 from pathlib import Path
 
+import jsii
 import toml
 from box import Box
-from cdktf import App, TerraformStack, Fn, TerraformIterator, LocalBackend
+from cdktf import (
+    App,
+    TerraformStack,
+    Fn,
+    TerraformIterator,
+    LocalBackend,
+    Aspects,
+    IAspect,
+)
 from cdktf_cdktf_provider_aws.iam_role import IamRole, IamRoleInlinePolicy
 from cdktf_cdktf_provider_aws.mwaa_environment import (
     MwaaEnvironment,
@@ -23,12 +32,24 @@ from cdktf_cdktf_provider_aws.security_group import (
     SecurityGroupIngress,
     SecurityGroupEgress,
 )
-from constructs import Construct
+from constructs import Construct, IConstruct
 
 from literals import *
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 CONFIG = Box(toml.loads(Path("config.toml").read_text()))
+
+
+@jsii.implements(IAspect)
+class TagsAddingAspect:
+    def __init__(self, tags_to_add: dict):
+        self.tags_to_add = tags_to_add
+
+    def visit(self, node: IConstruct) -> None:
+        if hasattr(node, "tags"):
+            if not isinstance(node.tags_input, dict):
+                node.tags = {}
+            node.tags = node.tags_input | self.tags_to_add  # needs python 3.9+
 
 
 class BaseStack(TerraformStack):
@@ -42,8 +63,11 @@ class BaseStack(TerraformStack):
         scope: Construct,
         ns: str,
         environment: Environment,
+        tags: dict = None,
     ):
         super().__init__(scope, ns)
+
+        self.default_tags = {"cdktf": "true"}
 
         match environment:
             case "dev":
@@ -67,6 +91,13 @@ class BaseStack(TerraformStack):
             self,
             "AWS",
         )
+
+        self.add_tags(tags)
+
+    def add_tags(self, tags):
+        """Add tags to every resource that can be tagged in the stack."""
+        tags = tags or {}
+        Aspects.of(self).add(TagsAddingAspect(self.default_tags | tags))
 
     @property
     def config(self):
@@ -109,6 +140,7 @@ class AirflowEnvironment(BaseStack):
         environment: Environment,
         mwaa_environment_name: str,
         bucket: str,
+        tags=None,
         airflow_version: AirflowVersion = "2.2.2",
         environment_class: EnvironmentClass = "mw1.small",
         webserver_access_mode: WebserverAccessMode = "PUBLIC_ONLY",
@@ -117,7 +149,7 @@ class AirflowEnvironment(BaseStack):
         schedulers: Schedulers = 2,
         logging_configuration: MwaaEnvironmentLoggingConfiguration = None,
     ):
-        super().__init__(scope, ns, environment)
+        super().__init__(scope, ns, environment, tags=tags)
 
         self.airflow_version = airflow_version
         self.environment_class = environment_class
@@ -145,7 +177,7 @@ class AirflowEnvironment(BaseStack):
             bucket=self.bucket_name,
             tags={
                 "Name": self.bucket_name,
-                "cdktf": "true",
+                # "cdktf": "true",
             },
         )
 
@@ -396,16 +428,16 @@ app = App()
 
 for environment in CONFIG:
 
-    bucket = f"allied-world-dags-{environment}"
-
-    AirflowDags(
-        app,
-        f"airflow-{environment}-dags",
-        environment=environment,
-        bucket=bucket,
-    )
-
     for airflow_environment in CONFIG[environment].airflow_environments:
+
+        bucket = f"allied-world-dags-{environment}-{airflow_environment}"
+
+        AirflowDags(
+            app,
+            f"airflow-{environment}-{airflow_environment}-dags",
+            environment=environment,
+            bucket=bucket,
+        )
 
         AirflowEnvironment(
             app,

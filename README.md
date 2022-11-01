@@ -26,6 +26,8 @@ pip install -r requirements-dags.txt
 ```bash
 # list available stacks for deployment
 cdktf list
-# deploy a stack
-cdktf deploy airflow-dev-dags
+# deploy dags
+cdktf deploy airflow-dev-data-engineering-dags
+# deploy airflow environment
+cdktf deploy airflow-dev-data-engineering-environment
 ```
