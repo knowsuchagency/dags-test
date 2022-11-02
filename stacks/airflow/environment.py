@@ -24,7 +24,7 @@ from cdktf_cdktf_provider_aws.security_group import (
 from constructs import Construct
 
 from stacks.literals import *
-from .base import BaseStack
+from stacks.base import BaseStack
 
 
 class AirflowEnvironment(BaseStack):

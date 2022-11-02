@@ -11,7 +11,7 @@ from cdktf_cdktf_provider_aws.s3_object import S3Object
 from constructs import Construct
 
 from stacks.literals import *
-from .base import BaseStack
+from stacks.base import BaseStack
 
 
 class AirflowDags(BaseStack):
@@ -23,19 +23,26 @@ class AirflowDags(BaseStack):
         ns: str,
         environment: Environment,
         bucket: str,
-        tags: dict=None,
+        tags: dict = None,
+        dags_path: Path | str = None,
     ):
 
         super().__init__(scope, ns, environment, tags=tags)
 
-        dags_path = Path("dags").resolve()
+        self.dags_path = Path(dags_path or "dags").resolve()
 
+        self.deploy_dags(bucket)
+
+    def deploy_dags(self, bucket):
+        """Deploys all python modules in the self.deploy_dags directory."""
         S3Object(
             self,
             "dags-deployment",
-            for_each=TerraformIterator.from_list(Fn.fileset(f"{dags_path}/", "*.py")),
+            for_each=TerraformIterator.from_list(
+                Fn.fileset(f"{self.dags_path}/", "*.py")
+            ),
             bucket=bucket,
             key="dags/${each.value}",
-            source=f"{dags_path}/${{each.value}}",
-            etag=f'filemd5("{dags_path}/${{each.value}}")',
+            source=f"{self.dags_path}/${{each.value}}",
+            etag=f'filemd5("{self.dags_path}/${{each.value}}")',
         )

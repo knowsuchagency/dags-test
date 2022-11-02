@@ -3,8 +3,8 @@
 import toml
 from cdktf import App
 
-from stacks.airflow_environment import AirflowEnvironment
-from stacks.dags import AirflowDags
+from stacks.airflow.environment import AirflowEnvironment
+from stacks.airflow.dags import AirflowDags
 from stacks.literals import Environment
 
 with open("config.toml") as fp:

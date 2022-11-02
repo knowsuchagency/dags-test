@@ -5,7 +5,6 @@ It ensures consistent use of configuration and AWS resource tagging.
 """
 import logging
 import os
-from functools import lru_cache
 from pathlib import Path
 
 import jsii
@@ -95,7 +94,6 @@ class BaseStack(TerraformStack):
         Aspects.of(self).add(TagsAddingAspect(self.default_tags | tags))
 
     @property
-    @lru_cache
     def config(self) -> Box:
         if self._config:
             return self._config
