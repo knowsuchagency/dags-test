@@ -1,7 +1,5 @@
-cdktf~=0.13.2
-# TODO: add version specifiers
-cdktf-cdktf-provider-docker
-cdktf-cdktf-provider-aws
-python-box
-boto3
-toml
+cdktf~=0.13
+cdktf-cdktf-provider-aws~=10.0
+python-box~=6.1
+boto3~=1.18
+toml~=0.10
