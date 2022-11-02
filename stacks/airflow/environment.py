@@ -84,23 +84,23 @@ class AirflowEnvironment(BaseStack):
 
         self.mwaa_environment = self.get_mwaa_environment()
 
-        if self.peer_vpc:
-            self.get_vpc_peering_connection()
+        self.vpc_peering_connection = self.get_vpc_peering_connection()
 
     def get_vpc_peering_connection(self):
-        return VpcPeeringConnection(
-            self,
-            "vpc-peering-connection",
-            vpc_id=self.vpc,
-            peer_vpc_id=self.peer_vpc,
-            auto_accept=True,
-            accepter=VpcPeeringConnectionAccepter(
-                allow_remote_vpc_dns_resolution=True,
-            ),
-            requester=VpcPeeringConnectionRequester(
-                allow_remote_vpc_dns_resolution=True,
-            ),
-        )
+        if self.peer_vpc:
+            return VpcPeeringConnection(
+                self,
+                "vpc-peering-connection",
+                vpc_id=self.vpc,
+                peer_vpc_id=self.peer_vpc,
+                auto_accept=True,
+                accepter=VpcPeeringConnectionAccepter(
+                    allow_remote_vpc_dns_resolution=True,
+                ),
+                requester=VpcPeeringConnectionRequester(
+                    allow_remote_vpc_dns_resolution=True,
+                ),
+            )
 
     def get_s3_bucket(self):
         bucket = S3Bucket(
