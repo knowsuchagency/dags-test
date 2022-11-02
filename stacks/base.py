@@ -7,32 +7,19 @@ import logging
 import os
 from pathlib import Path
 
-import jsii
 import toml
 from box import Box
 from cdktf import (
     TerraformStack,
     Aspects,
-    IAspect,
     S3Backend,
     TerraformBackend,
 )
 from cdktf_cdktf_provider_aws.provider import AwsProvider
-from constructs import Construct, IConstruct
+from constructs import Construct
 
+from stacks.aspects import TagsAddingAspect
 from stacks.literals import *
-
-
-@jsii.implements(IAspect)
-class TagsAddingAspect:
-    def __init__(self, tags_to_add: dict):
-        self.tags_to_add = tags_to_add
-
-    def visit(self, node: IConstruct):
-        if hasattr(node, "tags"):
-            if not isinstance(node.tags_input, dict):
-                node.tags = {}
-            node.tags = node.tags_input | self.tags_to_add
 
 
 class BaseStack(TerraformStack):
