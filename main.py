@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+This module is the infrastructure entrypoint.
+"""
 
 import toml
 from cdktf import App
