@@ -31,3 +31,7 @@ cdktf deploy airflow-dev-data-engineering-dags
 # deploy airflow environment
 cdktf deploy airflow-dev-data-engineering-environment
 ```
+
+### Stacks Package
+The [stacks](stacks/) package contains the classes for each of our terraform stacks.
+In the future, that package could be its own repository that we use from projects like this one as a dependency.
