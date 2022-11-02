@@ -28,7 +28,7 @@ from stacks.base import BaseStack
 
 
 class AirflowEnvironment(BaseStack):
-    """This stack deploys the MWAA Environment and the bucket it relies on."""
+    """This stack deploys the MWAA Environment and the resources it relies on."""
 
     bucket: S3Bucket
     execution_role: IamRole
