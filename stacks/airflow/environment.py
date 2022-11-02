@@ -30,6 +30,11 @@ from stacks.base import BaseStack
 class AirflowEnvironment(BaseStack):
     """This stack deploys the MWAA Environment and the bucket it relies on."""
 
+    bucket: S3Bucket
+    execution_role: IamRole
+    security_group: SecurityGroup
+    mwaa_environment: MwaaEnvironment
+
     def __init__(
         self,
         scope: Construct,
