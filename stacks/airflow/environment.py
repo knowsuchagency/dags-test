@@ -21,7 +21,8 @@ from cdktf_cdktf_provider_aws.security_group import (
     SecurityGroupIngress,
     SecurityGroupEgress,
 )
-from cdktf_cdktf_provider_aws.vpc_peering_connection import VpcPeeringConnection
+from cdktf_cdktf_provider_aws.vpc_peering_connection import VpcPeeringConnection, VpcPeeringConnectionAccepter, \
+    VpcPeeringConnectionRequester
 from constructs import Construct
 
 from stacks.literals import *
@@ -79,6 +80,24 @@ class AirflowEnvironment(BaseStack):
         self.security_group = self.get_security_group()
 
         self.mwaa_environment = self.get_mwaa_environment()
+
+        if self.peer_vpc:
+            self.get_vpc_peering_connection()
+
+    def get_vpc_peering_connection(self):
+        return VpcPeeringConnection(
+            self,
+            'vpc-peering-connection',
+            vpc_id=self.vpc,
+            peer_vpc_id=self.peer_vpc,
+            auto_accept=True,
+            accepter=VpcPeeringConnectionAccepter(
+                allow_remote_vpc_dns_resolution=True,
+            ),
+            requester=VpcPeeringConnectionRequester(
+                allow_remote_vpc_dns_resolution=True,
+            )
+        )
 
     def get_s3_bucket(self):
         bucket = S3Bucket(
