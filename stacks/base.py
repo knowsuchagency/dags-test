@@ -12,9 +12,10 @@ import toml
 from box import Box
 from cdktf import (
     TerraformStack,
-    LocalBackend,
     Aspects,
     IAspect,
+    S3Backend,
+    TerraformBackend,
 )
 from cdktf_cdktf_provider_aws.provider import AwsProvider
 from constructs import Construct, IConstruct
@@ -49,7 +50,8 @@ class BaseStack(TerraformStack):
         tags: dict = None,
         region: str = None,
         config_path: Path | str = None,
-            config: Box = None
+        config: Box = None,
+        backend: TerraformBackend = None,
     ):
         super().__init__(scope, ns)
 
@@ -57,7 +59,10 @@ class BaseStack(TerraformStack):
         self.default_tags = {"cdktf": "true"}
 
         if config and config_path:
-            logging.warning(f"config and config_path both passed. only config will be used.")
+            logging.warning(
+                f"config and config_path both passed. only config will be used."
+            )
+
         # default to config.toml in the root directory
         self.config_path = config_path or "config.toml"
         self._config = config
@@ -75,10 +80,11 @@ class BaseStack(TerraformStack):
         self.stack_name = ns
         self.environment = environment
 
-        # TODO: configure remote backend
-        self.backend = LocalBackend(
+        # TODO: switched to shared remote state backend
+        self.backend = backend or S3Backend(
             self,
-            path="terraform.tfstate",
+            bucket=f"allied-world-cdktf-state-{environment}",
+            key=f"{ns.lower()}/terraform.tfstate",
         )
 
         self.aws_provider = AwsProvider(
