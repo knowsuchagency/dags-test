@@ -36,23 +36,12 @@ class BaseStack(TerraformStack):
         environment: Environment,
         tags: dict = None,
         region: str = None,
-        config_path: Path | str = None,
-        config: Box = None,
         backend: TerraformBackend = None,
     ):
         super().__init__(scope, ns)
 
         self.region = region or os.getenv("AWS_REGION", "us-east-1")
         self.default_tags = {"cdktf": "true"}
-
-        if config and config_path:
-            logging.warning(
-                f"config and config_path both passed. only config will be used."
-            )
-
-        # default to config.toml in the root directory
-        self.config_path = config_path or "config.toml"
-        self._config = config
 
         match environment:
             case "dev":
@@ -85,10 +74,3 @@ class BaseStack(TerraformStack):
         """Add tags to every resource that can be tagged in the stack."""
         tags = tags or {}
         Aspects.of(self).add(TagsAddingAspect(self.default_tags | tags))
-
-    @property
-    def config(self) -> Box:
-        if self._config:
-            return self._config
-        config = Box(toml.loads(Path(self.config_path).read_text()))
-        return config[self.environment]

@@ -11,17 +11,17 @@ from stacks.airflow.dags import AirflowDags
 from stacks.literals import Environment
 
 with open("config.toml") as fp:
-    config = toml.load(fp)
+    CONFIG = toml.load(fp)
 
 
 app = App()
 
 
-for environment in config:
+for environment, config in CONFIG.items():
 
     environment: Environment
 
-    for airflow_environment in config[environment]["airflow_environments"]:
+    for airflow_environment in config["airflow_environments"]:
 
         bucket = f"allied-world-dags-{environment}-{airflow_environment}"
 
@@ -38,6 +38,9 @@ for environment in config:
             environment=environment,
             mwaa_environment_name=airflow_environment,
             bucket=bucket,
+            vpc=config["vpc"],
+            subnets=config["subnets"],
+            peer_vpc=config.get("peer_vpc"),
         )
 
 

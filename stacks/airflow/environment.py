@@ -21,6 +21,7 @@ from cdktf_cdktf_provider_aws.security_group import (
     SecurityGroupIngress,
     SecurityGroupEgress,
 )
+from cdktf_cdktf_provider_aws.vpc_peering_connection import VpcPeeringConnection
 from constructs import Construct
 
 from stacks.literals import *
@@ -34,6 +35,7 @@ class AirflowEnvironment(BaseStack):
     execution_role: IamRole
     security_group: SecurityGroup
     mwaa_environment: MwaaEnvironment
+    vpc_peering_connection: VpcPeeringConnection | None
 
     def __init__(
         self,
@@ -42,6 +44,9 @@ class AirflowEnvironment(BaseStack):
         environment: Environment,
         mwaa_environment_name: str,
         bucket: str,
+        vpc: str,
+        subnets: list[str],
+        peer_vpc: str = None,
         tags=None,
         airflow_version: AirflowVersion = "2.2.2",
         environment_class: EnvironmentClass = "mw1.small",
@@ -61,6 +66,9 @@ class AirflowEnvironment(BaseStack):
         self.min_workers = min_workers
         self.schedulers = schedulers
         self.logging_configuration = logging_configuration
+        self.vpc = vpc
+        self.peer_vpc = peer_vpc
+        self.subnets = subnets
 
         self.bucket_name = bucket
 
@@ -99,7 +107,7 @@ class AirflowEnvironment(BaseStack):
             self,
             "security-group",
             name=f"mwaa-{self.mwaa_environment_name}-sg",
-            vpc_id=self.config.vpc,
+            vpc_id=self.vpc,
             ingress=[
                 SecurityGroupIngress(
                     description="allow all inbound traffic within self",
@@ -168,7 +176,7 @@ class AirflowEnvironment(BaseStack):
             name=self.mwaa_environment_name,
             network_configuration=MwaaEnvironmentNetworkConfiguration(
                 security_group_ids=[self.security_group.id],
-                subnet_ids=self.config.subnets,
+                subnet_ids=self.subnets,
             ),
             source_bucket_arn=self.bucket.arn,
             airflow_configuration_options={
