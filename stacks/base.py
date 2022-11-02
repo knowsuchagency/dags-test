@@ -67,7 +67,7 @@ class BaseStack(TerraformStack):
         self.stack_name = ns
         self.environment = environment
 
-        # TODO: switched to shared remote state backend
+        # TODO: switch to shared remote state backend
         self.backend = backend or S3Backend(
             self,
             bucket=f"allied-world-cdktf-state-{environment}",
