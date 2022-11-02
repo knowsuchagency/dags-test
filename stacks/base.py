@@ -3,7 +3,7 @@ This contains the base Terraform Stack.
 
 It ensures consistent use of configuration and AWS resource tagging.
 """
-
+import logging
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -22,15 +22,13 @@ from constructs import Construct, IConstruct
 
 from stacks.literals import *
 
-CONFIG = Box(toml.loads(Path("config.toml").read_text()))
-
 
 @jsii.implements(IAspect)
 class TagsAddingAspect:
     def __init__(self, tags_to_add: dict):
         self.tags_to_add = tags_to_add
 
-    def visit(self, node: IConstruct) -> None:
+    def visit(self, node: IConstruct):
         if hasattr(node, "tags"):
             if not isinstance(node.tags_input, dict):
                 node.tags = {}
@@ -52,13 +50,18 @@ class BaseStack(TerraformStack):
         tags: dict = None,
         region: str = None,
         config_path: Path | str = None,
+            config: Box = None
     ):
         super().__init__(scope, ns)
 
         self.region = region or os.getenv("AWS_REGION", "us-east-1")
         self.default_tags = {"cdktf": "true"}
+
+        if config and config_path:
+            logging.warning(f"config and config_path both passed. only config will be used.")
         # default to config.toml in the root directory
         self.config_path = config_path or "config.toml"
+        self._config = config
 
         match environment:
             case "dev":
@@ -73,7 +76,7 @@ class BaseStack(TerraformStack):
         self.stack_name = ns
         self.environment = environment
 
-        #TODO: configure remote backend
+        # TODO: configure remote backend
         self.backend = LocalBackend(
             self,
             path="terraform.tfstate",
@@ -94,5 +97,7 @@ class BaseStack(TerraformStack):
     @property
     @lru_cache
     def config(self) -> Box:
+        if self._config:
+            return self._config
         config = Box(toml.loads(Path(self.config_path).read_text()))
         return config[self.environment]
