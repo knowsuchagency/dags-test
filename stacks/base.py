@@ -25,7 +25,7 @@ from stacks.literals import *
 class BaseStack(TerraformStack):
 
     environment: Environment
-    aws_account: str
+    account: str
     region: str
     stack_name: str
 
@@ -56,11 +56,11 @@ class BaseStack(TerraformStack):
 
         match environment:
             case "dev":
-                self.aws_account = "805321607950"
+                self.account = "805321607950"
             case "stage":
-                self.aws_account = "645769240473"
+                self.account = "645769240473"
             case "prod":
-                self.aws_account = "608056288583"
+                self.account = "608056288583"
             case _:
                 raise ValueError(f"unknown {environment = }")
 

@@ -229,7 +229,7 @@ class AirflowEnvironment(BaseStack):
                                     "Effect": "Allow",
                                     "Action": "airflow:PublishMetrics",
                                     "Resource": (
-                                        f"arn:aws:airflow:{self.region}:{self.aws_account}:environment/"
+                                        f"arn:aws:airflow:{self.region}:{self.account}:environment/"
                                         f"{self.mwaa_environment_name}"
                                     ),
                                 },
@@ -266,7 +266,7 @@ class AirflowEnvironment(BaseStack):
                                     ],
                                     "Resource": [
                                         (
-                                            f"arn:aws:logs:{self.region}:{self.aws_account}:log-group:airflow-"
+                                            f"arn:aws:logs:{self.region}:{self.account}:log-group:airflow-"
                                             f"{self.mwaa_environment_name}-*"
                                         )
                                     ],
@@ -302,7 +302,7 @@ class AirflowEnvironment(BaseStack):
                                         "kms:Encrypt",
                                         "kms:PutKeyPolicy",
                                     ],
-                                    "NotResource": f"arn:aws:kms:*:{self.aws_account}:key/*",
+                                    "NotResource": f"arn:aws:kms:*:{self.account}:key/*",
                                     "Condition": {
                                         "StringLike": {
                                             "kms:ViaService": [
