@@ -6,11 +6,12 @@ It uses the [CDK for Terraform](https://developer.hashicorp.com/terraform/cdktf)
 ## Structure
 
 ### Data Infrastructure
-The [aw_data_infra](infra/) package contains the classes and utilities for our terraform deployments.
 
 The infrastructure-as-code entrypoint is [main.py](main.py).
 
-Configuration for each environment can be found in [config.toml](config.toml)
+The [aw_data_infra](infra/) package contains the classes and utilities for our terraform deployments.
+
+Configuration for each environment can be found in [config.toml](config.toml).
 
 ## Usage
 
