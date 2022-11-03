@@ -14,8 +14,8 @@ from cdktf import (
 from cdktf_cdktf_provider_aws.provider import AwsProvider
 from constructs import Construct
 
-from aw_data_infrastructure.aspects import TagsAddingAspect
-from aw_data_infrastructure.literals import Environment
+from aw_data_infra.aspects import TagsAddingAspect
+from aw_data_infra.literals import Environment
 
 
 class BaseStack(TerraformStack):

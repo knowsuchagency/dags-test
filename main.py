@@ -8,9 +8,9 @@ from pathlib import Path
 import toml
 from cdktf import App
 
-from aw_data_infrastructure.literals import Environment
-from aw_data_infrastructure.stacks.airflow.dags import AirflowDags
-from aw_data_infrastructure.stacks.airflow.environment import AirflowEnvironment
+from aw_data_infra.literals import Environment
+from aw_data_infra.stacks.airflow.dags import AirflowDags
+from aw_data_infra.stacks.airflow.environment import AirflowEnvironment
 
 CONFIG = toml.loads(
     Path("config.toml").read_text(),

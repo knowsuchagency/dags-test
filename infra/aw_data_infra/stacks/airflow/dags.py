@@ -10,8 +10,8 @@ from cdktf import (
 from cdktf_cdktf_provider_aws.s3_object import S3Object
 from constructs import Construct
 
-from aw_data_infrastructure.literals import Environment
-from aw_data_infrastructure.stacks.base import BaseStack
+from aw_data_infra.literals import Environment
+from aw_data_infra.stacks.base import BaseStack
 
 
 class AirflowDags(BaseStack):

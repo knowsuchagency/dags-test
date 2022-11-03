@@ -28,9 +28,9 @@ from cdktf_cdktf_provider_aws.vpc_peering_connection import (
 )
 from constructs import Construct
 
-from aw_data_infrastructure.literals import Environment, AirflowVersion, EnvironmentClass, WebserverAccessMode, \
+from aw_data_infra.literals import Environment, AirflowVersion, EnvironmentClass, WebserverAccessMode, \
     Schedulers
-from aw_data_infrastructure.stacks.base import BaseStack
+from aw_data_infra.stacks.base import BaseStack
 
 
 class AirflowEnvironment(BaseStack):
