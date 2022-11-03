@@ -3,9 +3,7 @@
   "app": "python3 ./main.py",
   "projectId": "d96ce0c9-ac96-4763-87b8-6aa8e70ecd6d",
   "sendCrashReports": "false",
-  "terraformProviders": [
-    "hashicorp/aws@~>4.0"
-  ],
+  "terraformProviders": [],
   "terraformModules": [],
   "codeMakerOutput": "imports",
   "context": {

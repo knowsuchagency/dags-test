@@ -3,12 +3,8 @@ This contains the base Terraform Stack.
 
 It ensures consistent use of configuration and AWS resource tagging.
 """
-import logging
 import os
-from pathlib import Path
 
-import toml
-from box import Box
 from cdktf import (
     TerraformStack,
     Aspects,
@@ -18,8 +14,8 @@ from cdktf import (
 from cdktf_cdktf_provider_aws.provider import AwsProvider
 from constructs import Construct
 
-from stacks.aspects import TagsAddingAspect
-from stacks.literals import *
+from aw_data_infrastructure.aspects import TagsAddingAspect
+from aw_data_infrastructure.literals import Environment
 
 
 class BaseStack(TerraformStack):

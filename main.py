@@ -3,16 +3,18 @@
 This module is the infrastructure entrypoint.
 """
 
+from pathlib import Path
+
 import toml
 from cdktf import App
 
-from stacks.airflow.environment import AirflowEnvironment
-from stacks.airflow.dags import AirflowDags
-from stacks.literals import Environment
+from aw_data_infrastructure.literals import Environment
+from aw_data_infrastructure.stacks.airflow.dags import AirflowDags
+from aw_data_infrastructure.stacks.airflow.environment import AirflowEnvironment
 
-with open("config.toml") as fp:
-    CONFIG = toml.load(fp)
-
+CONFIG = toml.loads(
+    Path("config.toml").read_text(),
+)
 
 app = App()
 
@@ -23,7 +25,7 @@ for environment, config in CONFIG.items():
 
     for airflow_environment in config["airflow_environments"]:
 
-        bucket = f"allied-world-dags-{environment}-{airflow_environment}"
+        bucket = f"allied-world-dags-{environment}-{airflow_environment.lower()}"
 
         AirflowDags(
             app,

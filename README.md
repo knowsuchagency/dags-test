@@ -3,6 +3,11 @@
 This repo contains IAC for deploying MWAA (managed airflow) to AWS. 
 It uses the [CDK for Terraform](https://developer.hashicorp.com/terraform/cdktf) to define Terraform constructs in pure Python.
 
+## Structure
+
+### Data Infrastructure
+The [aw_data_infrastructure](infra/) package contains the classes and utilities for our terraform deployments.
+
 The infrastructure-as-code entrypoint is [main.py](main.py).
 
 Configuration for each environment can be found in [config.toml](config.toml)
@@ -17,8 +22,9 @@ python3.10 -m venv .venv
 . .venv/bin/activate
 # install requirements
 pip install -U pip
-pip install -r requirements.txt
-# we have to separate these, otherwise pip-installation fails (can't resolve)
+pip install -e .infra/
+# install the following if you're going to be editing dags in the dags/ directory
+# otherwise feel free to ignore
 pip install -r requirements-dags.txt
 ```
 
@@ -27,12 +33,8 @@ pip install -r requirements-dags.txt
 ```bash
 # list available stacks for deployment
 cdktf list
-# deploy dags
-cdktf deploy airflow-dev-data-engineering-dags
 # deploy airflow environment
 cdktf deploy airflow-dev-data-engineering-environment
+# deploy dags
+cdktf deploy airflow-dev-data-engineering-dags
 ```
-
-### Stacks Package
-The [stacks](stacks/) package contains the classes for each of our terraform stacks.
-In the future, that package could be its own repository that we use from projects like this one as a dependency.

@@ -1,5 +1,0 @@
-cdktf~=0.13
-cdktf-cdktf-provider-aws~=10.0
-python-box~=6.1
-boto3~=1.18
-toml~=0.10
