@@ -233,6 +233,102 @@ class AirflowEnvironment(BaseStack):
 
     def get_execution_role(self):
         """Return execution role for MWAA."""
+        minimum_required_airflow_statements = [
+            {
+                "Effect": "Allow",
+                "Action": "s3:GetAccountPublicAccessBlock",
+                "Resource": "*",
+            },
+            {
+                "Effect": "Allow",
+                "Action": "airflow:PublishMetrics",
+                "Resource": (
+                    f"arn:aws:airflow:{self.region}:{self.account}:environment/"
+                    f"{self.mwaa_environment_name}"
+                ),
+            },
+            {
+                "Effect": "Deny",
+                "Action": "s3:ListAllMyBuckets",
+                "Resource": [
+                    f"arn:aws:s3:::{self.bucket_name}",
+                    f"arn:aws:s3:::{self.bucket_name}/*",
+                ],
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject*",
+                    "s3:GetBucket*",
+                    "s3:List*",
+                ],
+                "Resource": [
+                    f"arn:aws:s3:::{self.bucket_name}",
+                    f"arn:aws:s3:::{self.bucket_name}/*",
+                ],
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:PutLogEvents",
+                    "logs:GetLogEvents",
+                    "logs:GetLogRecord",
+                    "logs:GetLogGroupFields",
+                    "logs:GetQueryResults",
+                ],
+                "Resource": [
+                    (
+                        f"arn:aws:logs:{self.region}:{self.account}:log-group:airflow-"
+                        f"{self.mwaa_environment_name}-*"
+                    )
+                ],
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["logs:DescribeLogGroups"],
+                "Resource": ["*"],
+            },
+            {
+                "Effect": "Allow",
+                "Action": "cloudwatch:PutMetricData",
+                "Resource": "*",
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "sqs:ChangeMessageVisibility",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes",
+                    "sqs:GetQueueUrl",
+                    "sqs:ReceiveMessage",
+                    "sqs:SendMessage",
+                ],
+                "Resource": f"arn:aws:sqs:{self.region}:*:airflow-celery-*",
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "kms:Decrypt",
+                    "kms:DescribeKey",
+                    "kms:GenerateDataKey*",
+                    "kms:Encrypt",
+                    "kms:PutKeyPolicy",
+                ],
+                "NotResource": f"arn:aws:kms:*:{self.account}:key/*",
+                "Condition": {
+                    "StringLike": {
+                        "kms:ViaService": [f"sqs.{self.region}.amazonaws.com"]
+                    }
+                },
+            },
+        ]
+        run_batch_jobs = {
+            "Effect": "Allow",
+            "Action": ["batch:SubmitJob", "batch:DescribeJobs"],
+            "Resource": "*",
+        }
         return IamRole(
             self,
             "execution-role",
@@ -261,97 +357,8 @@ class AirflowEnvironment(BaseStack):
                         {
                             "Version": "2012-10-17",
                             "Statement": [
-                                {
-                                    "Effect": "Allow",
-                                    "Action": "s3:GetAccountPublicAccessBlock",
-                                    "Resource": "*",
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": "airflow:PublishMetrics",
-                                    "Resource": (
-                                        f"arn:aws:airflow:{self.region}:{self.account}:environment/"
-                                        f"{self.mwaa_environment_name}"
-                                    ),
-                                },
-                                {
-                                    "Effect": "Deny",
-                                    "Action": "s3:ListAllMyBuckets",
-                                    "Resource": [
-                                        f"arn:aws:s3:::{self.bucket_name}",
-                                        f"arn:aws:s3:::{self.bucket_name}/*",
-                                    ],
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "s3:GetObject*",
-                                        "s3:GetBucket*",
-                                        "s3:List*",
-                                    ],
-                                    "Resource": [
-                                        f"arn:aws:s3:::{self.bucket_name}",
-                                        f"arn:aws:s3:::{self.bucket_name}/*",
-                                    ],
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "logs:CreateLogStream",
-                                        "logs:CreateLogGroup",
-                                        "logs:PutLogEvents",
-                                        "logs:GetLogEvents",
-                                        "logs:GetLogRecord",
-                                        "logs:GetLogGroupFields",
-                                        "logs:GetQueryResults",
-                                    ],
-                                    "Resource": [
-                                        (
-                                            f"arn:aws:logs:{self.region}:{self.account}:log-group:airflow-"
-                                            f"{self.mwaa_environment_name}-*"
-                                        )
-                                    ],
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": ["logs:DescribeLogGroups"],
-                                    "Resource": ["*"],
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": "cloudwatch:PutMetricData",
-                                    "Resource": "*",
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "sqs:ChangeMessageVisibility",
-                                        "sqs:DeleteMessage",
-                                        "sqs:GetQueueAttributes",
-                                        "sqs:GetQueueUrl",
-                                        "sqs:ReceiveMessage",
-                                        "sqs:SendMessage",
-                                    ],
-                                    "Resource": f"arn:aws:sqs:{self.region}:*:airflow-celery-*",
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "kms:Decrypt",
-                                        "kms:DescribeKey",
-                                        "kms:GenerateDataKey*",
-                                        "kms:Encrypt",
-                                        "kms:PutKeyPolicy",
-                                    ],
-                                    "NotResource": f"arn:aws:kms:*:{self.account}:key/*",
-                                    "Condition": {
-                                        "StringLike": {
-                                            "kms:ViaService": [
-                                                f"sqs.{self.region}.amazonaws.com"
-                                            ]
-                                        }
-                                    },
-                                },
+                                *minimum_required_airflow_statements,
+                                run_batch_jobs,
                             ],
                         }
                     ),

@@ -3,8 +3,9 @@ import logging
 from datetime import datetime as dt
 
 from airflow.decorators import dag, task
+from airflow.operators.dummy import DummyOperator
 
-from common import EXAMPLE_STRING
+from common import BatchOperator
 
 
 @dag(
@@ -13,11 +14,10 @@ from common import EXAMPLE_STRING
     catchup=False,
     tags=["example"],
 )
-def tutorial_taskflow_api_etl():
+def hello_world_dag():
     @task()
     def extract():
-        logging.info(f"EXAMPLE_STRING: {EXAMPLE_STRING}")
-        order_data_dict = json.loads(EXAMPLE_STRING)
+        order_data_dict = json.loads('{"x": 1.3, "y": 3}')
         return order_data_dict
 
     @task(multiple_outputs=True)
@@ -33,9 +33,19 @@ def tutorial_taskflow_api_etl():
     def load(total_order_value: float):
         logging.info(f"Total order value is: {total_order_value:.2f}")
 
+    start = DummyOperator(task_id="start")
+
+    fargate_job = BatchOperator(
+        task_id="fargate-job",
+        job_definition="hello-world",
+        job_name="hello",
+    )
+
     order_data = extract()
     order_summary = transform(order_data)
     load(order_summary["total_order_value"])
 
+    start >> [order_data, fargate_job]
 
-tutorial_etl_dag = tutorial_taskflow_api_etl()
+
+hello_world_dag = hello_world_dag()
