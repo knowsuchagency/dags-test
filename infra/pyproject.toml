@@ -11,6 +11,7 @@ dependencies = [
     "python-box~=6.1",
     "boto3~=1.18",
     "toml~=0.10",
+    "ruamel.yaml~=0.17",
 ]
 requires-python = ">=3.10"
 license = {text = "MIT"}

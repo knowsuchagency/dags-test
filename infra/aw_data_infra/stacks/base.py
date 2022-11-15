@@ -33,10 +33,17 @@ class BaseStack(TerraformStack):
         tags: dict = None,
         region: str = None,
         backend: TerraformBackend = None,
+        backend_bucket: str = None,
     ):
         super().__init__(scope, ns)
 
-        self.region = region or os.getenv("AWS_REGION", "us-east-1")
+        self.region = region or os.getenv(
+            "AWS_REGION",
+            os.getenv(
+                "AWS_DEFAULT_REGION",
+                "us-east-1",
+            ),
+        )
         self.default_tags = {"cdktf": "true"}
 
         match environment:
@@ -52,10 +59,9 @@ class BaseStack(TerraformStack):
         self.stack_name = ns
         self.environment = environment
 
-        # TODO: switch to shared remote state backend
         self.backend = backend or S3Backend(
             self,
-            bucket=f"allied-world-cdktf-state-{environment}",
+            bucket=backend_bucket or f"allied-world-cdktf-state-{environment}",
             key=f"{ns.lower()}/terraform.tfstate",
         )
 

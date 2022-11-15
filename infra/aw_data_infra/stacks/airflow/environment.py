@@ -28,8 +28,13 @@ from cdktf_cdktf_provider_aws.vpc_peering_connection import (
 )
 from constructs import Construct
 
-from aw_data_infra.literals import Environment, AirflowVersion, EnvironmentClass, WebserverAccessMode, \
-    Schedulers
+from aw_data_infra.literals import (
+    Environment,
+    AirflowVersion,
+    EnvironmentClass,
+    WebserverAccessMode,
+    Schedulers,
+)
 from aw_data_infra.stacks.base import BaseStack
 
 
@@ -52,7 +57,6 @@ class AirflowEnvironment(BaseStack):
         vpc: str,
         subnets: list[str],
         peer_vpc: str = None,
-        tags=None,
         airflow_version: AirflowVersion = "2.2.2",
         environment_class: EnvironmentClass = "mw1.small",
         webserver_access_mode: WebserverAccessMode = "PUBLIC_ONLY",
@@ -60,8 +64,9 @@ class AirflowEnvironment(BaseStack):
         min_workers: int = 1,
         schedulers: Schedulers = 2,
         logging_configuration: MwaaEnvironmentLoggingConfiguration = None,
+        **kwargs,
     ):
-        super().__init__(scope, ns, environment, tags=tags)
+        super().__init__(scope, ns, environment, **kwargs)
 
         self.airflow_version = airflow_version
         self.environment_class = environment_class

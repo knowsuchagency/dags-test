@@ -1,5 +1,0 @@
-[dev]
-vpc = "vpc-0d819d4ed2f6cf33f"
-peer_vpc = "vpc-0b18a53b9d7fa154a"
-subnets = ["subnet-05381beba1da37295", "subnet-0e88f922959e7bb28"]
-airflow_environments = ["data-engineering", "test"]

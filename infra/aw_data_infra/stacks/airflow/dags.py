@@ -23,11 +23,11 @@ class AirflowDags(BaseStack):
         ns: str,
         environment: Environment,
         bucket: str,
-        tags: dict = None,
         dags_path: Path | str = None,
+        **kwargs,
     ):
 
-        super().__init__(scope, ns, environment, tags=tags)
+        super().__init__(scope, ns, environment, **kwargs)
 
         self.dags_path = Path(dags_path or "dags").resolve()
 
