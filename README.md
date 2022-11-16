@@ -48,3 +48,18 @@ cdktf deploy airflow-dev-data-engineering-environment
 # deploy dags
 cdktf deploy airflow-dev-data-engineering-dags
 ```
+
+### Running airflow locally for development
+
+```bash
+# make sure you first install airflow/dags requirements
+pip install -r requirements-dags.txt
+
+./scripts/run-airflow.zsh
+```
+
+**Note**:
+You may occassionally run into a situation where the local airflow database becomes corrupted
+in a way you can't fix with `airflow db reset`.
+
+In that case, you can nuke the db by deleting the default airflow metadata directory `rm -rf ~/airflow`.
