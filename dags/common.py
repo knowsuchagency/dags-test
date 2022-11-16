@@ -1,3 +1,6 @@
+"""
+Objects in this module are meant to be imported from the modules in which DAGs are defined.
+"""
 import json
 import logging
 import os
@@ -138,8 +141,6 @@ def run_batch_job(
         batch_hook.check_job_success(job_id)
 
     except Exception as e:
-
-        # include url in exception string so we can get to it quickly from slack
 
         raise type(e)(url + "\n" + str(e))
 
