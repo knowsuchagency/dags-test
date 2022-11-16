@@ -2,13 +2,29 @@ import json
 import logging
 import os
 import shlex
+from types import SimpleNamespace
 from typing import *
-from airflow.models import TaskInstance, BaseOperator
+from airflow.models import TaskInstance, BaseOperator, Variable
 from airflow.providers.amazon.aws.hooks.batch_client import (
     AwsBatchClientHook,
     AwsBatchProtocol,
 )
 from jinja2 import Template
+
+
+def set_defaults(deserialize_json=False, **kwargs) -> SimpleNamespace:
+    """Simplifies setting (and retrieving) airflow variables."""
+
+    return SimpleNamespace(
+        **{
+            var_name: Variable.setdefault(
+                var_name,
+                default,
+                deserialize_json=deserialize_json,
+            )
+            for var_name, default in kwargs.items()
+        }
+    )
 
 
 def run_batch_job(
@@ -88,15 +104,13 @@ def run_batch_job(
         sep=os.linesep,
     )
 
-    # we have to programmatically construct kwargs because array_properties argument cannot be None
-
-    submit_job_kwargs = dict(
-        jobName=job_name,
-        jobQueue=job_queue,
-        jobDefinition=job_definition,
-        containerOverrides=container_overrides,
-        tags=tags,
-    )
+    submit_job_kwargs = {
+        "jobName": job_name,
+        "jobQueue": job_queue,
+        "jobDefinition": job_definition,
+        "containerOverrides": container_overrides,
+        "tags": tags,
+    }
 
     if timeout:
         submit_job_kwargs.update(
