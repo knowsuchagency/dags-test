@@ -1,6 +1,15 @@
-# MWAA Infra
+# Orchestration Infrastructure
 
-This repo contains IAC for deploying MWAA (managed airflow) to AWS. 
+This repo contains IAC for deploying the following
+
+* Managed Airflow
+  * Environments
+  * Dags
+* AWS Batch
+  * Compute Environments
+  * Job Queues
+  * Job Definitions
+
 It uses the [CDK for Terraform](https://developer.hashicorp.com/terraform/cdktf) to define Terraform constructs in pure Python.
 
 ## Structure
