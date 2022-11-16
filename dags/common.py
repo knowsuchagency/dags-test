@@ -150,6 +150,9 @@ def run_batch_job(
 
 
 class BatchOperator(BaseOperator):
+    """
+    This operator is for submitting jobs to AWS Batch.
+    """
 
     template_fields = (
         "command",
