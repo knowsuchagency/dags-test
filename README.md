@@ -27,6 +27,8 @@ Configuration for each environment can be found in [config.toml](config.toml).
 ### Installation
 
 ```bash
+# install cdktf cli
+npm install --global cdktf-cli@latest
 # set up 3.10+ virtualenv
 python3.10 -m venv .venv
 . .venv/bin/activate

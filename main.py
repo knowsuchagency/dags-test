@@ -26,15 +26,14 @@ for environment, config in CONFIG.items():
     environment: Environment
 
     vpc = config["vpc"]
-    subnets = config["subnets"]
     backend_bucket = config.get("backend_bucket")
 
-    airflow_config = config.get("airflow")
+    airflow = config.get("airflow")
+    batch = config.get("batch")
 
-    if airflow_config:
-        airflow_peer_vpc = airflow_config["peer_vpc"]
+    if airflow:
 
-        for airflow_environment in airflow_config["environments"]:
+        for airflow_environment in airflow["environments"]:
 
             bucket = f"allied-world-dags-{environment}-{airflow_environment.lower()}"
 
@@ -52,9 +51,9 @@ for environment, config in CONFIG.items():
                 environment=environment,
                 mwaa_environment_name=airflow_environment,
                 bucket=bucket,
-                vpc=vpc,
-                subnets=subnets,
-                peer_vpc=airflow_peer_vpc,
+                vpc=airflow.vpc,
+                subnets=airflow.subnets,
+                peer_vpc=vpc,
                 backend_bucket=backend_bucket,
             )
 
@@ -63,7 +62,7 @@ for environment, config in CONFIG.items():
         f"{environment}-batch-infra",
         environment=environment,
         vpc=vpc,
-        subnets=subnets,
+        subnets=batch.subnets,
         backend_bucket=backend_bucket,
     )
 
