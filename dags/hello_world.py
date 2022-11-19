@@ -15,6 +15,7 @@ dag = DAG(
 
 set_defaults(
     hello_world_job_definition="hello-world",
+    hello_world_job_queue="fargate-spot",
 )
 
 
@@ -24,4 +25,5 @@ with dag:
         task_id="fargate-job",
         job_definition="{{ var.value.hello_world_job_definition }}",
         job_name="hello",
+        job_queue="{{ var.value.hello_world_job_queue }}",
     )
