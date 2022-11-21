@@ -15,19 +15,16 @@ from airflow.providers.amazon.aws.hooks.batch_client import (
 from jinja2 import Template
 
 
-def set_defaults(deserialize_json=False, **kwargs) -> SimpleNamespace:
+def set_defaults(deserialize_json=False, prefix=None, **kwargs) -> SimpleNamespace:
     """Simplifies setting (and retrieving) airflow variables."""
-
-    return SimpleNamespace(
-        **{
-            var_name: Variable.setdefault(
-                var_name,
-                default,
-                deserialize_json=deserialize_json,
-            )
-            for var_name, default in kwargs.items()
-        }
-    )
+    result = {}
+    for var_name, default in kwargs.items():
+        result[var_name] = Variable.setdefault(
+            f"{prefix}_{var_name}" if prefix else var_name,
+            default,
+            deserialize_json=deserialize_json,
+        )
+    return SimpleNamespace(**result)
 
 
 def run_batch_job(

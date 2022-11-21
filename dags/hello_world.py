@@ -14,8 +14,9 @@ dag = DAG(
 )
 
 set_defaults(
-    hello_world_job_definition="hello-world",
-    hello_world_job_queue="fargate-spot",
+    prefix="hello_world",
+    job_queue="fargate-spot",
+    job_definition="hello-world",
 )
 
 
@@ -23,7 +24,7 @@ with dag:
 
     BatchOperator(
         task_id="fargate-job",
-        job_definition="{{ var.value.hello_world_job_definition }}",
-        job_name="hello",
-        job_queue="{{ var.value.hello_world_job_queue }}",
+        job_name="fargate-task",
+        job_definition="{{ var.value.job_definition }}",
+        job_queue="{{ var.value.job_queue }}",
     )

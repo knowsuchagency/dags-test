@@ -9,8 +9,15 @@ dev:
     subnets:
       - "subnet-05381beba1da37295"
       - "subnet-0e88f922959e7bb28"
-  batch:
-    subnets:
+  subnets:
+    persistence:
+      - "subnet-0dd616e01ac5f95cb"
+      - "subnet-0c39741f6d47c8990"
+      - "subnet-09e97b237811d4519"
+      - "subnet-00bcd6c2b7fa6ef25"
+      - "subnet-0d34583ae1be2cc66"
+      - "subnet-03071fb7d889cd309"
+    app:
       - "subnet-0850ef96828277b4a"
       - "subnet-0b4525720b6cbe987"
       - "subnet-06655217a8f347d34"

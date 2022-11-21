@@ -25,15 +25,9 @@ for environment, config in CONFIG.items():
 
     environment: Environment
 
-    vpc = config["vpc"]
-    backend_bucket = config.get("backend_bucket")
+    if config.airflow:
 
-    airflow = config.get("airflow")
-    batch = config.get("batch")
-
-    if airflow:
-
-        for airflow_environment in airflow["environments"]:
+        for airflow_environment in config.airflow.environments:
 
             bucket = f"allied-world-dags-{environment}-{airflow_environment.lower()}"
 
@@ -42,7 +36,7 @@ for environment, config in CONFIG.items():
                 f"{environment}-airflow-{airflow_environment}-dags",
                 environment=environment,
                 bucket=bucket,
-                backend_bucket=backend_bucket,
+                backend_bucket=config.backend_bucket,
             )
 
             AirflowEnvironment(
@@ -51,19 +45,19 @@ for environment, config in CONFIG.items():
                 environment=environment,
                 mwaa_environment_name=airflow_environment,
                 bucket=bucket,
-                vpc=airflow.vpc,
-                subnets=airflow.subnets,
-                peer_vpc=vpc,
-                backend_bucket=backend_bucket,
+                vpc=config.airflow.vpc,
+                subnets=config.airflow.subnets,
+                peer_vpc=config.vpc,
+                backend_bucket=config.backend_bucket,
             )
 
     Batch(
         app,
         f"{environment}-batch-infra",
         environment=environment,
-        vpc=vpc,
-        subnets=batch.subnets,
-        backend_bucket=backend_bucket,
+        vpc=config.vpc,
+        subnets=config.subnets.persistence,
+        backend_bucket=config.backend_bucket,
     )
 
     FargateJobDefinition(
