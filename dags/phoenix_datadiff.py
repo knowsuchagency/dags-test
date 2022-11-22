@@ -43,8 +43,8 @@ def datadiff(tables: list):
         job_definition=var.job_definition,
         job_queue=var.job_queue,
         environment_variables={
-            "INGESTION_GLUE_CONNECTION": var.source_glue_connection,
-            "OPTIMIZATION_GLUE_CONNECTION": var.target_glue_connection,
+            "SOURCE_GLUE_CONNECTION": var.source_glue_connection,
+            "TARGET_GLUE_CONNECTION": var.target_glue_connection,
             "SOURCE_SCHEMA": var.source_schema,
             "TARGET_SCHEMA": var.target_schema,
             "TABLES": json.dumps(tables),
