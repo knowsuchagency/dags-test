@@ -38,6 +38,7 @@ def run_batch_job(
     memory: int = 2048,
     timeout: int = None,
     environment_variables: dict = None,
+    array_size: int = None,
 ):
     """
     Run job in AWS Batch.
@@ -119,6 +120,13 @@ def run_batch_job(
             }
         )
 
+    if array_size:
+        submit_job_kwargs.update(
+            arrayProperties={
+                "size": array_size,
+            },
+        )
+
     job = batch_client.submit_job(**submit_job_kwargs)
 
     job_id = job["jobId"]
@@ -174,6 +182,7 @@ class BatchOperator(BaseOperator):
         environment_variables: dict = None,
         timeout: Optional[int] = None,
         transform_environment_variables: bool = True,
+        array_size: int = None,
         **kwargs,
     ):
         """
@@ -191,6 +200,7 @@ class BatchOperator(BaseOperator):
             environment_variables: environment variables to pass to the job
             timeout: timeout for job in seconds
             transform_environment_variables: allows you to use airflow templates in environment variables
+            array_size: if the job is an array job, this is the number of parallel jobs
 
         Warnings:
             Timeout terminations are handled on a best-effort basis. You shouldn't expect your timeout termination to happen exactly when the job attempt times out (it may take a few seconds longer). If your application requires precise timeout execution, you should implement this logic within the application. If you have a large number of jobs timing out concurrently, the timeout terminations behave as a first in, first out queue, where jobs are terminated in batches.
@@ -209,6 +219,7 @@ class BatchOperator(BaseOperator):
         self.environment_variables = environment_variables
         self.timeout = timeout
         self.transform_environment_variables = transform_environment_variables
+        self.array_size = array_size
 
     def execute(self, context):
 
@@ -231,10 +242,12 @@ class BatchOperator(BaseOperator):
             memory=self.memory,
             environment_variables=environment_variables,
             timeout=self.timeout,
+            array_size=self.array_size,
         )
 
         task_instance: TaskInstance = context["task_instance"]
 
         task_instance.xcom_push("job_id", job_id)
+        task_instance.xcom_push("array_size", self.array_size)
 
         return job_id
