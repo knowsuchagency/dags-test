@@ -6,7 +6,7 @@ from airflow.decorators import task
 from airflow.operators.python import get_current_context
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
-from common import BatchOperator, set_defaults, run_batch_job
+from common import set_defaults, run_batch_job
 
 dag = DAG(
     dag_id="phoenix-datadiff",
@@ -32,13 +32,29 @@ var = set_defaults(
 
 @task()
 def get_tables() -> list:
-    s3 = S3Hook()
-    key = s3.read_key(key=var.tables_key, bucket_name=var.bucket)
+    """Return list of tables to diff from source schema."""
+    run_batch_job(
+        job_name="phoenix-upload-source-tables-list",
+        job_definition=var.job_definition,
+        job_queue=var.job_queue,
+        command="upload-tables",
+        environment_variables={
+            "SOURCE_SCHEMA": var.source_schema,
+            "S3_TABLES_PATH": f"s3://{var.bucket}/{var.tables_key}",
+        },
+    )
+
+    key = S3Hook().read_key(
+        key=var.tables_key,
+        bucket_name=var.bucket,
+    )
+
     return json.loads(key)
 
 
 @task
-def datadiff(tables: list):
+def run_datadiff(tables: list):
+    """Execute batch array job to diff each table between source and target schemas."""
     context = get_current_context()
 
     run_batch_job(
@@ -55,25 +71,12 @@ def datadiff(tables: list):
             "BUCKET": var.bucket,
         },
         array_size=len(tables),
+        retries=1,
     )
 
 
 with dag:
 
-    upload_tables = BatchOperator(
-        task_id="upload_tables",
-        job_name="phoenix-upload-source-tables-list",
-        job_definition=var.job_definition,
-        job_queue=var.job_queue,
-        command="upload-tables",
-        environment_variables={
-            "SOURCE_SCHEMA": var.source_schema,
-            "S3_TABLES_PATH": f"s3://{var.bucket}/{var.tables_key}",
-        },
-    )
-
     tables = get_tables()
 
-    upload_tables >> tables
-
-    datadiff(tables)
+    run_datadiff(tables)
