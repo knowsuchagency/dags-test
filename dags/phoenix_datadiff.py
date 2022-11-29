@@ -68,7 +68,6 @@ def run_datadiff(tables: list):
             "TARGET_SCHEMA": var.target_schema,
             "TABLES": json.dumps(tables),
             "DATE": context["ds"],
-            "BUCKET": var.bucket,
         },
         array_size=len(tables),
         retries=1,
