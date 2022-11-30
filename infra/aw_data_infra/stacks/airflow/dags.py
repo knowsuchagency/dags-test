@@ -39,7 +39,7 @@ class AirflowDags(BaseStack):
             self,
             "dags-deployment",
             for_each=TerraformIterator.from_list(
-                Fn.fileset(f"{self.dags_path}/", "*.py")
+                Fn.fileset(f"{self.dags_path}/", "*")
             ),
             bucket=bucket,
             key="dags/${each.value}",

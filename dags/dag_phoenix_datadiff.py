@@ -1,12 +1,15 @@
 import datetime as dt
 import json
+import logging
+from operator import attrgetter
 
 from airflow import DAG
 from airflow.decorators import task
 from airflow.operators.python import get_current_context
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
-from common import set_defaults, run_batch_job
+from common import set_defaults, run_batch_job, slack_notification
+from models import DataDiffResult
 
 dag = DAG(
     dag_id="phoenix-datadiff",
@@ -15,6 +18,9 @@ dag = DAG(
     start_date=dt.datetime.today() - dt.timedelta(days=1),
     catchup=True,
     tags=["phoenix"],
+    default_args={
+        "on_failure_callback": slack_notification,
+    },
 )
 
 var = set_defaults(
@@ -27,10 +33,14 @@ var = set_defaults(
     target_schema="phoenix_development_ingested_dms",
     bucket="allied-world-dags-dev-data-engineering",
     tables_key="data/phoenix/datadiff/source_tables.json",
+    table_prefix="",
+    results_table="phoenix_datadiff_results",
 )
 
+DataDiffResult.update_table_name(var.results_table)
 
-@task()
+
+@task(retries=1)
 def get_tables() -> list:
     """Return list of tables to diff from source schema."""
     run_batch_job(
@@ -52,7 +62,7 @@ def get_tables() -> list:
     return json.loads(key)
 
 
-@task
+@task(retries=2)
 def run_datadiff(tables: list):
     """Execute batch array job to diff each table between source and target schemas."""
     context = get_current_context()
@@ -68,14 +78,44 @@ def run_datadiff(tables: list):
             "TARGET_SCHEMA": var.target_schema,
             "TABLES": json.dumps(tables),
             "DATE": context["ds"],
+            "PREFIX": var.table_prefix,
         },
         array_size=len(tables),
         retries=1,
     )
 
 
+@task(
+    # run whether upstream task succeeds or fails
+    trigger_rule="all_done",
+)
+def handle_exceptions():
+    """Handle datadiff exceptions"""
+    context = get_current_context()
+    ts = dt.datetime.fromisoformat(context["ts"])
+    hash_key = dt.datetime(
+        year=ts.year,
+        month=ts.month,
+        day=ts.day,
+        hour=0,
+        minute=0,
+    )
+
+    results = list(
+        DataDiffResult.query(
+            hash_key,
+            filter_condition=DataDiffResult.exception.exists(),
+        )
+    )
+
+    results.sort(key=attrgetter("exception", "table"))
+
+    for r in results:
+        logging.info(f"{r.table} - {r.exception}")
+
+
 with dag:
 
     tables = get_tables()
 
-    run_datadiff(tables)
+    run_datadiff(tables) >> handle_exceptions()

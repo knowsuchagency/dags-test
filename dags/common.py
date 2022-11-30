@@ -4,9 +4,12 @@ Objects in this module are meant to be imported from the modules in which DAGs a
 import json
 import logging
 import os
+import re
 import shlex
 from types import SimpleNamespace
 from typing import *
+
+import requests
 from airflow.models import TaskInstance, BaseOperator, Variable
 from airflow.providers.amazon.aws.hooks.batch_client import (
     AwsBatchClientHook,
@@ -265,3 +268,75 @@ class BatchOperator(BaseOperator):
         task_instance.xcom_push("array_size", self.array_size)
 
         return job_id
+
+def slack_notification(context):
+    """Send slack alert in event of failure."""
+
+    logging.info("sending slack notification")
+
+    url = Variable.get(
+        "slack_alerts_webhook_url",
+        default_var="https://hooks.slack.com/services/{{foo}}",
+    )
+
+    task_instance = context.get("task_instance")
+
+    task = task_instance.task_id
+    dag = task_instance.dag_id
+    log_url = task_instance.log_url
+    execution_date = context.get("execution_date")
+    exception = context.get("exception")
+
+    # we had a naming convention for dags this would take advantage of to determine the color of the slack alert emoji
+    m = re.search(r"priority_?(\d)", dag)
+
+    priority = m.group(1) if m is not None else "3"
+
+    alert_emoji = {
+        "0": "black_circle",
+        "1": "red_circle",
+        "2": "large_orange_circle",
+        "3": "large_blue_circle",
+    }.get(priority, "large_blue_circle")
+
+    data = {
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f":{alert_emoji}: *{dag}.{task}*",
+                },
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Execution Time*: {execution_date}",
+                    }
+                ],
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"Exception: {exception}"},
+                "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "logs",
+                        "emoji": True,
+                    },
+                    "value": "click_me_123",
+                    "url": log_url,
+                    "action_id": "button-action",
+                },
+            },
+        ]
+    }
+
+    resp = requests.post(url, json=data)
+
+    logging.info("slack response:", resp.content)
+
+    logging.info("slack notification sent")

@@ -206,6 +206,7 @@ class AirflowEnvironment(BaseStack):
                 security_group_ids=[self.security_group.id],
                 subnet_ids=self.subnets,
             ),
+            requirements_s3_path="dags/requirements.txt",
             source_bucket_arn=self.bucket.arn,
             airflow_configuration_options={
                 "core.execute_tasks_new_python_interpreter": "true",
@@ -323,6 +324,13 @@ class AirflowEnvironment(BaseStack):
                     }
                 },
             },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "dynamodb:*",
+                ],
+                "Resource": f"arn:aws:dynamodb:{self.region}:{self.account}:table/*"
+            }
         ]
         run_batch_jobs = {
             "Effect": "Allow",
