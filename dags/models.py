@@ -17,8 +17,8 @@ class DataDiffResult(Model):
         region = "us-east-1"
         billing_mode = "PAY_PER_REQUEST"
 
-    date = UTCDateTimeAttribute(hash_key=True)
-    table = UnicodeAttribute(range_key=True)
+    table = UnicodeAttribute(hash_key=True)
+    date = UnicodeAttribute()
     source_schema = UnicodeAttribute()
     target_schema = UnicodeAttribute()
     plus_rows = UnicodeSetAttribute()

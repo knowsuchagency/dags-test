@@ -8,7 +8,7 @@ from airflow.decorators import task
 from airflow.operators.python import get_current_context
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
-from common import set_defaults, run_batch_job, slack_notification
+from common import set_defaults, run_batch_job, slack_notification, BatchOperator
 from models import DataDiffResult
 
 dag = DAG(
@@ -33,8 +33,8 @@ var = set_defaults(
     target_schema="phoenix_development_ingested_dms",
     bucket="allied-world-dags-dev-data-engineering",
     tables_key="data/phoenix/datadiff/source_tables.json",
-    table_prefix="",
     results_table="phoenix_datadiff_results",
+    results_schema="dynamodb",
 )
 
 DataDiffResult.update_table_name(var.results_table)
@@ -69,6 +69,7 @@ def run_datadiff(tables: list):
 
     run_batch_job(
         job_name="phoenix-datadiff",
+        command="diff-data",
         job_definition=var.job_definition,
         job_queue=var.job_queue,
         environment_variables={
@@ -78,7 +79,6 @@ def run_datadiff(tables: list):
             "TARGET_SCHEMA": var.target_schema,
             "TABLES": json.dumps(tables),
             "DATE": context["ds"],
-            "PREFIX": var.table_prefix,
         },
         array_size=len(tables),
         retries=1,
@@ -91,19 +91,8 @@ def run_datadiff(tables: list):
 )
 def handle_exceptions():
     """Handle datadiff exceptions"""
-    context = get_current_context()
-    ts = dt.datetime.fromisoformat(context["ts"])
-    hash_key = dt.datetime(
-        year=ts.year,
-        month=ts.month,
-        day=ts.day,
-        hour=0,
-        minute=0,
-    )
-
     results = list(
-        DataDiffResult.query(
-            hash_key,
+        DataDiffResult.scan(
             filter_condition=DataDiffResult.exception.exists(),
         )
     )
@@ -118,4 +107,24 @@ with dag:
 
     tables = get_tables()
 
-    run_datadiff(tables) >> handle_exceptions()
+    datadiff = run_datadiff(tables)
+
+    datadiff >> handle_exceptions()
+
+    # this operator isn't strictly necessary. quicksight reads directly from dynamodb
+    results_to_redshift = BatchOperator(
+        task_id="results-to-redshift",
+        job_definition=var.job_definition,
+        command=["dynamodb-to-redshift", var.results_table],
+        job_name="phoenix-datadiff-results-to-redshift",
+        job_queue=var.job_queue,
+        environment_variables={
+            "GLUE_CONNECTION": var.target_glue_connection,
+            "SCHEMA": var.results_schema,
+            "S3_PATH": f"s3://{var.bucket}/data/temp/",
+        },
+        # run whether upstream task succeeds or fails
+        trigger_rule="all_done",
+    )
+
+    datadiff >> results_to_redshift
