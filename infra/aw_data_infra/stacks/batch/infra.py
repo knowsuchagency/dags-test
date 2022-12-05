@@ -59,6 +59,7 @@ class Batch(BaseStack):
         self.fargate_spot_compute_environment = self.get_fargate_compute_environment(
             "fargate-spot",
             spot=True,
+            max_vcpus=2048,
         )
 
         self.fargate_spot_job_queue = BatchJobQueue(
