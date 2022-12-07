@@ -34,28 +34,23 @@ python3.10 -m venv .venv
 . .venv/bin/activate
 # install requirements
 pip install -U pip
-pip install -e infra/
+pip install -r requirements-deployment.txt
 # install the following if you're going to be editing dags in the dags/ directory
 # otherwise feel free to ignore
-pip install -r requirements-dags.txt
+pip install -r requirements-airflow.txt
 ```
 
 ### Deployment
 
 ```bash
-# list available stacks for deployment
-cdktf list
-# deploy airflow environment
-cdktf deploy airflow-dev-data-engineering-environment
-# deploy dags
-cdktf deploy airflow-dev-data-engineering-dags
+cdk deploy
 ```
 
 ### Running airflow locally for development
 
 ```bash
 # make sure you first install airflow/dags requirements
-pip install -r requirements-dags.txt
+pip install -r requirements-airflow.txt
 
 ./scripts/run-airflow.zsh
 ```
