@@ -35,6 +35,7 @@ var = set_defaults(
     tables_key="data/phoenix/datadiff/source_tables.json",
     results_table="phoenix_datadiff_results",
     results_schema="dynamodb",
+    excluded_tables="active_storage_variant_records,active_storage_blobs,active_storage_attachments,transaction_imports,transaction_import_rows",
 )
 
 DataDiffResult.update_table_name(var.results_table)
@@ -59,12 +60,13 @@ def get_tables() -> list:
         bucket_name=var.bucket,
     )
 
-    exclude = ["active_storage_variant_records", "active_storage_blobs", "active_storage_blobs", "active_storage_attachments", "transaction_imports", "transaction_import_rows"]
-    tables = json.loads(key)
-    doesnt_start_with_temp = lambda t : not t.starts_with("temp_")
-    isnt_in_exclude = lambda t: t not in exclude
-    tables = [t for t in tables if doesnt_start_with_temp(t) and isnt_in_exclude(t)]
-    return tables
+    excluded = var.excluded_tables.split(",")
+
+    return [
+        t
+        for t in json.loads(key)
+        if (not t.startswith("temp_")) and (t not in excluded)
+    ]
 
 
 @task(retries=2)
