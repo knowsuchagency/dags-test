@@ -6,6 +6,9 @@ import logging
 import os
 import re
 import shlex
+import base64
+from pprint import pprint
+from textwrap import dedent
 from types import SimpleNamespace
 from typing import *
 
@@ -31,18 +34,18 @@ def set_defaults(deserialize_json=False, prefix=None, **kwargs) -> SimpleNamespa
 
 
 def run_batch_job(
-    job_definition: str,
-    command: Optional[Union[list, str]] = None,
-    job_name: str = None,
-    job_queue: str = "fargate-spot",
-    check_success: bool = True,
-    tags: dict = None,
-    vcpu: Union[int, float] = 1,
-    memory: int = 2048,
-    timeout: int = None,
-    environment_variables: dict = None,
-    array_size: int = None,
-    retries: int = None,
+        job_definition: str,
+        command: Optional[Union[list, str]] = None,
+        job_name: str = None,
+        job_queue: str = "fargate-spot",
+        check_success: bool = True,
+        tags: dict = None,
+        vcpu: Union[int, float] = 1,
+        memory: int = 2048,
+        timeout: int = None,
+        environment_variables: dict = None,
+        array_size: int = None,
+        retries: int = None,
 ):
     """
     Run job in AWS Batch.
@@ -63,12 +66,17 @@ def run_batch_job(
     Returns: job id
 
     Warnings:
-        Timeout terminations are handled on a best-effort basis. You shouldn't expect your timeout termination to happen exactly when the job attempt times out (it may take a few seconds longer). If your application requires precise timeout execution, you should implement this logic within the application. If you have a large number of jobs timing out concurrently, the timeout terminations behave as a first in, first out queue, where jobs are terminated in batches.
+        Timeout terminations are handled on a best-effort basis. You shouldn't expect your
+        timeout termination to happen exactly when the job attempt times out (it may take a few
+        seconds longer). If your application requires precise timeout execution, you should
+        implement this logic within the application. If you have a large number of jobs timing
+        out concurrently, the timeout terminations behave as a first in, first out queue,
+        where jobs are terminated in batches.
         https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html
 
     """
     assert (
-        command or job_name
+            command or job_name
     ), "you must provide either a name for the job or a command to run"
 
     if not job_name:
@@ -143,12 +151,12 @@ def run_batch_job(
 
     job_id = job["jobId"]
 
-    url = f"https://us-east-1.console.aws.amazon.com/batch/home?region=us-east-1#jobs/detail/{job_id}"
+    url = f"https://us-east-1.console.aws.amazon.com/batch/home?region=us-east-1#jobs/detail/" \
+          f"{job_id}"
 
     logging.info(url)
 
     if not check_success:
-
         return job_id
 
     batch_hook.wait_for_job(job_id)
@@ -183,21 +191,21 @@ class BatchOperator(BaseOperator):
     )
 
     def __init__(
-        self,
-        job_definition: str,
-        job_queue: str = "fargate-spot",
-        command: Optional[Union[list, str]] = None,
-        job_name: Optional[str] = None,
-        check_success: bool = True,
-        tags: Optional[dict] = None,
-        vcpu: Union[str, int] = 1,
-        memory: Union[str, int] = 2048,
-        environment_variables: dict = None,
-        timeout: Optional[int] = None,
-        transform_environment_variables: bool = True,
-        array_size: int = None,
-        batch_retries: int = None,
-        **kwargs,
+            self,
+            job_definition: str,
+            job_queue: str = "fargate-spot",
+            command: Optional[Union[list, str]] = None,
+            job_name: Optional[str] = None,
+            check_success: bool = True,
+            tags: Optional[dict] = None,
+            vcpu: Union[str, int] = 1,
+            memory: Union[str, int] = 2048,
+            environment_variables: dict = None,
+            timeout: Optional[int] = None,
+            transform_environment_variables: bool = True,
+            array_size: int = None,
+            batch_retries: int = None,
+            **kwargs,
     ):
         """
         Run job on AWS Batch.
@@ -213,12 +221,18 @@ class BatchOperator(BaseOperator):
             memory: the maximum about of memory for the job. converted to GiB if < 1024 else MiB
             environment_variables: environment variables to pass to the job
             timeout: timeout for job in seconds
-            transform_environment_variables: allows you to use airflow templates in environment variables
+            transform_environment_variables: allows you to use airflow templates in environment
+            variables
             array_size: if the job is an array job, this is the number of parallel jobs
             batch_retries: the number of times AWS Batch will retry a failed job
 
         Warnings:
-            Timeout terminations are handled on a best-effort basis. You shouldn't expect your timeout termination to happen exactly when the job attempt times out (it may take a few seconds longer). If your application requires precise timeout execution, you should implement this logic within the application. If you have a large number of jobs timing out concurrently, the timeout terminations behave as a first in, first out queue, where jobs are terminated in batches.
+            Timeout terminations are handled on a best-effort basis. You shouldn't expect your
+            timeout termination to happen exactly when the job attempt times out (it may take a
+            few seconds longer). If your application requires precise timeout execution,
+            you should implement this logic within the application. If you have a large number of
+            jobs timing out concurrently, the timeout terminations behave as a first in,
+            first out queue, where jobs are terminated in batches.
             https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html
         """
         super().__init__(**kwargs)
@@ -269,6 +283,7 @@ class BatchOperator(BaseOperator):
 
         return job_id
 
+
 def slack_notification(context):
     """Send slack alert in event of failure."""
 
@@ -287,7 +302,8 @@ def slack_notification(context):
     execution_date = context.get("execution_date")
     exception = context.get("exception")
 
-    # we had a naming convention for dags this would take advantage of to determine the color of the slack alert emoji
+    # we had a naming convention for dags this would take advantage of to determine the color of
+    # the slack alert emoji
     m = re.search(r"priority_?(\d)", dag)
 
     priority = m.group(1) if m is not None else "3"
@@ -340,3 +356,68 @@ def slack_notification(context):
     logging.info("slack response:", resp.content)
 
     logging.info("slack notification sent")
+
+
+def create_jira_ticket(context):
+    """Create a JIRA ticket in the event of failure."""
+
+    url = Variable.get(
+        "jira_api_url",
+        default_var="https://alliedworld.atlassian.net/rest/api/3/issue",
+    )
+    project = Variable.get(
+        "jira_project_key",
+        default_var="TMTA",
+    )
+    token = Variable.get(
+        "jira_username_token",
+        default_var="",
+    ).strip()
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Basic " + base64.b64encode(token.encode()).decode("utf-8")
+    }
+    timestamp = context['ts']
+    task_instance = context['ti']
+    task = task_instance.task_id
+    dag = task_instance.dag_id
+    log_url = task_instance.log_url
+
+    data = {
+        "fields": {
+            "summary": "[Airflow] Pipeline Failure: Task Failed",
+            "description": {
+                "type": "doc",
+                "version": 1,
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": dedent(
+                                    f"""
+                                    Date: {timestamp}
+                                    DAG: {dag}
+                                    Task: {task}
+                                    Logs: [Logs|{log_url}]
+                                    """)
+                            }
+                        ]
+                    }
+                ]
+            },
+            "issuetype": {
+                "name": "Task"
+            },
+            "project": {
+                "key": project
+            }
+        }
+    }
+
+    logging.info("creating JIRA ticket")
+    resp = requests.post(url, json=data, headers=headers)
+    resp.raise_for_status()
+    logging.info(f"JIRA ticket: {resp.text}")

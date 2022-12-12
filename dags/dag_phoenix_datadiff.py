@@ -8,7 +8,7 @@ from airflow.decorators import task
 from airflow.operators.python import get_current_context
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
-from common import set_defaults, run_batch_job, slack_notification, BatchOperator
+from common import set_defaults, run_batch_job, create_jira_ticket, BatchOperator
 from models import DataDiffResult
 
 dag = DAG(
@@ -19,7 +19,7 @@ dag = DAG(
     catchup=True,
     tags=["phoenix"],
     default_args={
-        "on_failure_callback": slack_notification,
+        "on_failure_callback": create_jira_ticket,
     },
 )
 
