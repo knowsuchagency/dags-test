@@ -7,7 +7,6 @@ import os
 import re
 import shlex
 import base64
-from pprint import pprint
 from textwrap import dedent
 from types import SimpleNamespace
 from typing import *
@@ -365,28 +364,73 @@ def create_jira_ticket(context):
         "jira_api_url",
         default_var="https://alliedworld.atlassian.net/rest/api/3/issue",
     )
-    project = Variable.get(
-        "jira_project_key",
-        default_var="TMTA",
-    )
     token = Variable.get(
         "jira_username_token",
         default_var="",
     ).strip()
+
+    project_id = Variable.get(
+        "jira_project_id",
+        default_var="11898",  # DP Project
+    )
+    parent_ticket_key = Variable.get(
+        "jira_parent_ticket_key",
+        default_var="DP-400",  # Phoenix Pipeline Errors Epic
+    )
+    reporter_id = Variable.get(
+        "jira_reporter_id",
+        default_var="6296b0a81a2bdf0070950a79",  # alison.stanton@awacservices.com should be reporter
+    )
+    priority_id = Variable.get(
+        "jira_priority_id",
+        default_var="10104",  # Minor
+    )
+    story_points_id = Variable.get(
+        "jira_story_points_id",
+        default_var="14676",  # Story Points = 2
+    )
+
+    timestamp = context['ts']
+    ds = context['ds']
+    task_instance = context['ti']
+    task = task_instance.task_id
+    dag = task_instance.dag_id
+    log_url = task_instance.log_url
+    issue_type_id = "11502"  # Issue is a Task
+
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "Authorization": "Basic " + base64.b64encode(token.encode()).decode("utf-8")
     }
-    timestamp = context['ts']
-    task_instance = context['ti']
-    task = task_instance.task_id
-    dag = task_instance.dag_id
-    log_url = task_instance.log_url
 
     data = {
         "fields": {
-            "summary": "[Airflow] Pipeline Failure: Task Failed",
+            "summary": f"[jira-test] Airflow Pipeline Failure: {dag}-{task}",
+            "project": {
+                "id": project_id
+            },
+            "parent": {
+                "key": parent_ticket_key
+            },
+            "issuetype": {
+                "id": issue_type_id
+            },
+            "priority": {
+                "id": priority_id
+            },
+            "customfield_12507": ds,  # Start Date custom field -- has to be a data in format 'YYYY-MM-DD'
+            "customfield_12863": {  # Story Points
+                "id": story_points_id
+            },
+            "customfield_12862": "When a pipeline fails, the DP teams wants to capture the failure so they can address it and fix the pipeline.",
+            "reporter": {
+                "id": reporter_id
+            },
+            "labels": [
+                "Phoenix",
+                "Error",
+            ],
             "description": {
                 "type": "doc",
                 "version": 1,
@@ -401,19 +445,13 @@ def create_jira_ticket(context):
                                     Date: {timestamp}
                                     DAG: {dag}
                                     Task: {task}
-                                    Logs: [Logs|{log_url}]
+                                    Logs: {log_url}
                                     """)
                             }
                         ]
                     }
                 ]
             },
-            "issuetype": {
-                "name": "Task"
-            },
-            "project": {
-                "key": project
-            }
         }
     }
 
