@@ -100,7 +100,7 @@ app = cdk.App()
 Pipeline(
     app,
     "pipeline",
-    stack_name="pipeline",
+    stack_name="data-engineering-dags",
     env=env,
     tags=tags,
 )
